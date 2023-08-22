@@ -24,9 +24,16 @@ python3 manage.py createsuperuser
 ```bash
 python3 manage.py runserver
 ```
+The address of the admin panel: http://127.0.0.1:8000/admin/
 
-### 5. Add token:
-положить токен в файл .env
+### 5. Create .env and add token:
 TELEGRAM_TOKEN=...
 
-The address of the admin panel: [admin_panel](http://127.0.0.1:8000/admin/).
+
+### 6. Start Bot
+```bash
+python3 bot.py
+```
+
+You will find bot at t.me/flower_shop_dvmn_bot
+
