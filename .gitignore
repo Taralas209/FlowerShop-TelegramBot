@@ -3,3 +3,5 @@ myenv/
 db.sqlite3
 __pycache__/
 .env
+Pipfile
+Pipfile.lock
