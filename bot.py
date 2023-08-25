@@ -1,41 +1,13 @@
 import os
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler
+from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text
+from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT
+
+from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flower_shop.settings')
 import django
 django.setup()
-
-
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("Заказать", callback_data='order')],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    update.message.reply_text("Привет! Хотите заказать цветы?")
-    update.message.reply_text("Нажмите кнопку ниже, чтобы сделать заказ:", reply_markup=reply_markup)
-
-
-def order_flower(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-    show_flower(update, context)
-
-
-def show_flower(update: Update, context: CallbackContext):
-    from telegram_bot.models import Flower
-    flower = Flower.objects.first()
-    query = update.callback_query
-
-    if flower is not None:
-        text = f"{flower.name}\n{flower.description}\nЦена: {flower.price} руб.\nПодходит для: {flower.get_occasion_display()}"
-        query.message.reply_text(text)
-    else:
-        query.message.reply_text("К сожалению, цветы в наличии отсутствуют.")
-
 
 
 def main():
@@ -45,8 +17,17 @@ def main():
 
     dp = updater.dispatcher
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(order_flower, pattern='order'))
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            CHOOSE_OCCASION: [CallbackQueryHandler(choose_occasion)],
+            CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, custom_occasion_text)],
+            CHOOSE_BUDGET: [CallbackQueryHandler(choose_budget)],
+        },
+        fallbacks=[],
+    )
+
+    dp.add_handler(conv_handler)
 
     updater.start_polling()
     updater.idle()
