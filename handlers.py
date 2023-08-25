@@ -4,7 +4,8 @@ from telegram.ext import CallbackContext
 from telegram_bot.models import Flower
 
 
-CUSTOM_OCCASION, PRICES = range(2)
+CUSTOM_OCCASION, PRICES, OCCASION_HANDLER = range(3)
+END = -1
 # def order_flower(update: Update, context: CallbackContext):
 #     query = update.callback_query
 #     query.answer()
@@ -47,8 +48,18 @@ def show_occasions(update: Update, context: CallbackContext):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     query = update.callback_query
+    print(query)
     query.message.reply_text("Выберите повод:", reply_markup=reply_markup)
+
+    return OCCASION_HANDLER
+
+
+def occasion_handler(update, context):
+    query = update.callback_query
+    query.answer()
+    print(query)
     user_choice = query.data
+    print(user_choice)
     if user_choice == "other_occasion":
         return CUSTOM_OCCASION
     else:
@@ -58,11 +69,12 @@ def show_occasions(update: Update, context: CallbackContext):
 def show_prices(update, context):
     query = update.callback_query
     query.answer()
+    print(query)
     if update.message:
         context.chat_data["occasion"] = update.message.text
     else:
         context.chat_data["occasion"] = query.data
-
+    print(context.chat_data)
     keyboard = [
         [InlineKeyboardButton("~500", callback_data="price_500")],
         [InlineKeyboardButton("~1000", callback_data="price_1000")],
@@ -73,6 +85,8 @@ def show_prices(update, context):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     query.message.reply_text("На какую сумму рассчитываете?", reply_markup=reply_markup)
+
+    return END
 
 
 def ask_for_occasion(update, context):

@@ -17,6 +17,7 @@ conversation_handler = ConversationHandler(
     states={
         handlers.CUSTOM_OCCASION: [CallbackQueryHandler(handlers.ask_for_occasion)],
         handlers.PRICES: [CallbackQueryHandler(handlers.show_prices)],
+        handlers.OCCASION_HANDLER: [CallbackQueryHandler(handlers.occasion_handler)]
     },
     fallbacks=[]
 )
