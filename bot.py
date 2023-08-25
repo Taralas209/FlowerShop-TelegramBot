@@ -1,55 +1,44 @@
 import os
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler
+from telegram import Update
+from telegram.ext import CommandHandler, ConversationHandler, Updater, CallbackQueryHandler, Filters
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flower_shop.settings')
 import django
 django.setup()
+import handlers
 
 
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("Заказать", callback_data='order')],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    update.message.reply_text("Привет! Хотите заказать цветы?")
-    update.message.reply_text("Нажмите кнопку ниже, чтобы сделать заказ:", reply_markup=reply_markup)
-
-
-def order_flower(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-    show_flower(update, context)
-
-
-def show_flower(update: Update, context: CallbackContext):
-    from telegram_bot.models import Flower
-    flower = Flower.objects.first()
-    query = update.callback_query
-
-    if flower is not None:
-        text = f"{flower.name}\n{flower.description}\nЦена: {flower.price} руб.\nПодходит для: {flower.get_occasion_display()}"
-        query.message.reply_text(text)
-    else:
-        query.message.reply_text("К сожалению, цветы в наличии отсутствуют.")
-
+conversation_handler = ConversationHandler(
+    entry_points=[
+        CallbackQueryHandler(handlers.show_occasions, pattern='order')
+    ],
+    states={
+        handlers.CUSTOM_OCCASION: [CallbackQueryHandler(handlers.ask_for_occasion)],
+        handlers.PRICES: [CallbackQueryHandler(handlers.show_prices)],
+    },
+    fallbacks=[]
+)
 
 
 def main():
     load_dotenv()
-    TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-    updater = Updater(TELEGRAM_TOKEN)
+    telegram_token = os.getenv('TELEGRAM_TOKEN')
+    updater = Updater(telegram_token)
 
     dp = updater.dispatcher
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(order_flower, pattern='order'))
+    dp.add_handler(CommandHandler("start", handlers.start))
+    dp.add_handler(conversation_handler)
+    # dp.add_handler(CallbackQueryHandler(handlers.show_occasions, pattern='order'))
+    # dp.add_handler(CallbackQueryHandler(handlers.show_prices, pattern="^birthday|no_reason|user_occasion$"))
+    # dp.add_handler(CallbackQueryHandler(handlers.ask_for_occasion, pattern="occasion_other"))
 
     updater.start_polling()
     updater.idle()
 
+
 if __name__ == '__main__':
     main()
+
