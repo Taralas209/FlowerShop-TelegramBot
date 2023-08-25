@@ -1,5 +1,9 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import CallbackContext
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+from .models import Flower
+import os
 
 
 CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, SHOW_FLOWER, ORDER_FLOWER, END = range(6)
@@ -66,8 +70,37 @@ def choose_budget(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
     context.user_data["budget"] = query.data
-    print(context.user_data)
 
-    return SHOW_FLOWER
+    show_flower_and_buttons(update, context)
+
+    return ORDER_FLOWER
 
 
+def show_flower_and_buttons(update: Update, context: CallbackContext):
+    flower = Flower.objects.order_by('?').first()
+
+    fs = FileSystemStorage()
+    image_path = fs.url(flower.image.name)
+    image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
+
+    update.callback_query.message.reply_photo(photo=open(image_path, 'rb'))
+    update.callback_query.message.reply_text(f"Название: {flower.name}\n"
+                              f"Описание: {flower.description}\n"
+                              f"Цена: {flower.price} руб.")
+
+    keyboard = [
+        [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
+        [InlineKeyboardButton("Заказать", callback_data='order')],
+
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.callback_query.message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
+
+    keyboard2 = [
+        [InlineKeyboardButton("Заказать консультацию", callback_data='onsulting')],
+        [InlineKeyboardButton("Посмотреть всю коллекцию", callback_data='collection')],
+
+    ]
+    reply_markup2 = InlineKeyboardMarkup(keyboard2)
+    update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
+                                             reply_markup=reply_markup2)
