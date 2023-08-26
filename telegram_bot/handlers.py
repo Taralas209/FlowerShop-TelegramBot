@@ -106,3 +106,18 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
     reply_markup2 = InlineKeyboardMarkup(keyboard2)
     update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
                                              reply_markup=reply_markup2)
+
+def get_filtered_flowers(occasion, approx_price):
+    price_range = {
+        "price_500": (500, 600),
+        "price_1000": (1000, 1500),
+        "price_2000": (2000, 3000),
+        "price_more": 3000,
+    }
+    if approx_price == "price_more":
+        flowers_list = Flower.objects.filter(occasion=occasion, price__gte=price_range[approx_price])
+    elif approx_price == "price_none":
+        flowers_list = Flower.objects.filter(occasion=occasion)
+    else:
+        flowers_list = Flower.objects.filter(occasion=occasion, price__range=price_range[approx_price])
+    return flowers_list
