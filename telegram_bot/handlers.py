@@ -75,7 +75,6 @@ def choose_budget(update: Update, context: CallbackContext):
     return BUTTON_HANDLING
 
 
-
 def show_flower_and_buttons(update: Update, context: CallbackContext):
     print(f"context.user_data = {context.user_data}")
     if context.user_data.get("custom_occasion"):
@@ -130,8 +129,9 @@ def send_flower_info(update, context):
     reply_markup2 = InlineKeyboardMarkup(keyboard2)
     update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
                                              reply_markup=reply_markup2)
-
 ###
+
+
 def button_click(update, context):
     query = update.callback_query
     query.answer()
@@ -178,6 +178,7 @@ def order_flower(update: Update, context: CallbackContext):
     query.answer()
 ###
 
+
 def button_handling(update: Update, context:  CallbackContext):
     query = update.callback_query
     query.answer()
@@ -199,6 +200,7 @@ def button_handling(update: Update, context:  CallbackContext):
 def ask_name(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Пожалуйста, введите ваше имя:")
     return CHOOSE_SURNAME
+
 
 def ask_surname(update: Update, context: CallbackContext):
     context.user_data["name"] = update.message.text
