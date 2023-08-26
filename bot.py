@@ -19,7 +19,7 @@ def main():
         entry_points=[CommandHandler('start', handlers.start)],
         states={
             handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
-            handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)],
+            # handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)],
             handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
             handlers.CUSTOM_OCCASION_TEXT: [
                 MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
