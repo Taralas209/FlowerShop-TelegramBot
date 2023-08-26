@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMedia
 from telegram.ext import CallbackContext, ConversationHandler
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
@@ -196,7 +196,7 @@ def button_handling(update: Update, context:  CallbackContext):
         if index < 0:
             index = len(context.user_data["flowers"]) - 1
         context.user_data["current_flower_index"] = index
-        return send_flower_info(update, context)
+        return update_catalogue(update, context)
     elif query.data == 'forward':
         print("Пользователь нажал кнопку 'Вперёд'")
         index = index + 1
@@ -229,18 +229,18 @@ def update_catalogue(update, context):
         f"Описание: {flower.description}\n"
         f"Цена: {flower.price} руб."
     )
-    context.bot.edit_message_caption(
-        chat_id=query.message.chat_id,
-        message_id=catalogue_message_id,
-        caption=flower_description
-    )
 
-    # with open(image_path, "rb") as new_image:
-    #     context.bot.edit_message_media(
-    #         message_id=catalogue_message_id,
-    #         chat_id=query.message.chat_id,
-    #         media=new_image,
-    #     )
+    with open(image_path, "rb") as new_image:
+        new_photo = InputMediaPhoto(
+            media=new_image,
+            caption=flower_description
+        )
+
+        context.bot.edit_message_media(
+            message_id=catalogue_message_id,
+            chat_id=query.message.chat_id,
+            media=new_photo,
+        )
 
 
 def ask_name(update: Update, context: CallbackContext):
