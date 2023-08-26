@@ -83,8 +83,7 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
         occasion = context.user_data["occasion"]
     approx_price = context.user_data["budget"]
 
-    # flowers = get_filtered_flowers(occasion, approx_price)
-    flowers = get_all_flowers()
+    flowers = get_filtered_flowers(occasion, approx_price)
     if not flowers:
         update.message.reply_text("Нет подходящих букетов")
         return ConversationHandler.END
@@ -130,27 +129,6 @@ def send_flower_info(update, context):
                                              reply_markup=reply_markup2)
 
     context.user_data["catalogue_message_id"] = catalogue_message.message_id
-    ###
-
-
-# def button_click(update, context):
-#     query = update.callback_query
-#     query.answer()
-#     index = context.user_data["current_flower_index"]
-#
-#     if query.data == "back":
-#         index = index - 1
-#     elif query.data == "forward":
-#         index = index + 1
-#
-#     if index < 0:
-#         index = len(context.user_data["flowers"]) - 1
-#     elif index >= len(context.user_data["flowers"]):
-#         index = 0
-#     print(f"button_click: index = {index}")
-#     context.user_data["current_flower_index"] = index
-#
-#     send_flower_info(update, context)
 
 
 def get_filtered_flowers(occasion, approx_price):
@@ -174,12 +152,6 @@ def get_all_flowers():
     return Flower.objects.all()
 
 
-def order_flower(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-###
-
-
 def button_handling(update: Update, context:  CallbackContext):
     query = update.callback_query
     query.answer()
@@ -191,14 +163,12 @@ def button_handling(update: Update, context:  CallbackContext):
         update.callback_query.message.reply_text("Начнем процесс заказа!")
         return ask_name(update, context)
     elif query.data == 'back':
-        print("Пользователь нажал кнопку 'Назад'")
         index = index - 1
         if index < 0:
             index = len(context.user_data["flowers"]) - 1
         context.user_data["current_flower_index"] = index
         return update_catalogue(update, context)
     elif query.data == 'forward':
-        print("Пользователь нажал кнопку 'Вперёд'")
         index = index + 1
         if index >= len(context.user_data["flowers"]):
             index = 0
@@ -209,6 +179,9 @@ def button_handling(update: Update, context:  CallbackContext):
         return get_number_for_consulting(update, context)
     elif query.data == 'collection':
         print("Пользователь нажал кнопку Коллекция")
+        update.callback_query.message.reply_text("Вот вся наша коллеция:")
+        context.user_data["flowers"] = get_all_flowers()
+        send_flower_info(update, context)
 
 
 def update_catalogue(update, context):
