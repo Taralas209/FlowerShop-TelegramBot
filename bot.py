@@ -18,13 +18,20 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', handlers.start)],
         states={
+            handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
+            handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)],
             handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
             handlers.CUSTOM_OCCASION_TEXT: [
                 MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
             ],
             handlers.CHOOSE_BUDGET: [CallbackQueryHandler(handlers.choose_budget)],
-            handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
-            handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)]
+            handlers.BUTTON_HANDLING: [CallbackQueryHandler(handlers.button_handling)],
+            handlers.CHOOSE_NAME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_name)],
+            handlers.CHOOSE_SURNAME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_surname)],
+            handlers.CHOOSE_ADDRESS: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_address)],
+            handlers.CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_date)],
+            handlers.CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_time)],
+            handlers.ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_order)],
         },
         fallbacks=[],
     )
