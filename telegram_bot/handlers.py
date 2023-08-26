@@ -106,13 +106,12 @@ def send_flower_info(update, context):
     image_path = fs.url(flower.image.name)
     image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
 
-    update.callback_query.message.reply_photo(photo=open(image_path, 'rb'))
-    update.callback_query.message.reply_text(
+    flower_description = (
         f"Название: {flower.name}\n"
         f"Описание: {flower.description}\n"
         f"Цена: {flower.price} руб."
     )
-
+    update.callback_query.message.reply_photo(photo=open(image_path, 'rb'), caption=flower_description)
     keyboard = [
         [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
         [InlineKeyboardButton("Заказать", callback_data='order')],
