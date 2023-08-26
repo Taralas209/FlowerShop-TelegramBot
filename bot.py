@@ -4,8 +4,8 @@ import django
 django.setup()
 
 from dotenv import load_dotenv
-from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, show_flower_and_buttons
-from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, SHOW_FLOWER
+from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order
+from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, BUTTON_HANDLING, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, ORDER_FLOWER
 from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
 
 def main():
@@ -21,7 +21,13 @@ def main():
             CHOOSE_OCCASION: [CallbackQueryHandler(choose_occasion)],
             CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, custom_occasion_text)],
             CHOOSE_BUDGET: [CallbackQueryHandler(choose_budget)],
-            #SHOW_FLOWER: [CallbackQueryHandler(show_flower)],
+            BUTTON_HANDLING: [CallbackQueryHandler(button_handling)],
+            CHOOSE_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
+            CHOOSE_SURNAME: [MessageHandler(Filters.text & ~Filters.command, ask_surname)],
+            CHOOSE_ADDRESS: [MessageHandler(Filters.text & ~Filters.command, ask_address)],
+            CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
+            CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
+            ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, get_order)],
         },
         fallbacks=[],
     )

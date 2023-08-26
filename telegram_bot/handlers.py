@@ -6,7 +6,7 @@ from .models import Flower
 import os
 
 
-CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, SHOW_FLOWER, ORDER_FLOWER, END = range(6)
+CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, END = range(12)
 
 
 def start(update: Update, context: CallbackContext):
@@ -43,6 +43,7 @@ def choose_occasion(update: Update, context: CallbackContext):
 
     return CHOOSE_BUDGET
 
+
 def show_budget_buttons(update: Update, _: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("500", callback_data='500')],
@@ -61,7 +62,6 @@ def custom_occasion_text(update: Update, context: CallbackContext):
 
     update.message.reply_text(f"Какой другой повод: {user_input}")
     show_budget_buttons(update, context)
-
     return CHOOSE_BUDGET
 
 
@@ -72,8 +72,7 @@ def choose_budget(update: Update, context: CallbackContext):
     context.user_data["budget"] = query.data
 
     show_flower_and_buttons(update, context)
-
-    return ORDER_FLOWER
+    return BUTTON_HANDLING
 
 
 def show_flower_and_buttons(update: Update, context: CallbackContext):
@@ -97,10 +96,66 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
 
     keyboard2 = [
-        [InlineKeyboardButton("Заказать консультацию", callback_data='onsulting')],
+        [InlineKeyboardButton("Заказать консультацию", callback_data='consulting')],
         [InlineKeyboardButton("Посмотреть всю коллекцию", callback_data='collection')],
 
     ]
     reply_markup2 = InlineKeyboardMarkup(keyboard2)
     update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
                                              reply_markup=reply_markup2)
+
+
+def button_handling(update: Update, context:  CallbackContext):
+    query = update.callback_query
+    query.answer()
+
+    if query.data == "order":
+        update.callback_query.message.reply_text("Начнем процесс заказа!")
+        return ask_name(update, context)
+    elif query.data == 'back':
+        print("Пользователь нажал кнопку 'Назад'")
+    elif query.data == 'forward':
+        print("Пользователь нажал кнопку 'Вперёд'")
+    elif query.data == 'consulting':
+        update.callback_query.message.reply_text("Укажите номер телефона, и наш флорист перезвонит вам в течение 20 минут")
+        return get_number_for_consulting(update, context)
+    elif query.data == 'collection':
+        print("Пользователь нажал кнопку Коллекция")
+
+
+def ask_name(update: Update, context: CallbackContext):
+    update.callback_query.message.reply_text("Пожалуйста, введите ваше имя:")
+    return CHOOSE_SURNAME
+
+def ask_surname(update: Update, context: CallbackContext):
+    context.user_data["name"] = update.message.text
+    update.message.reply_text("Теперь введите вашу фамилию:")
+    return CHOOSE_ADDRESS
+
+
+def ask_address(update: Update, context: CallbackContext):
+    context.user_data["surname"] = update.message.text
+    update.message.reply_text("Введите ваш адрес:")
+    return CHOOSE_DATE
+
+
+def ask_date(update: Update, context: CallbackContext):
+    context.user_data["adress"] = update.message.text
+    update.message.reply_text("Введите дату доставки:")
+    return CHOOSE_TIME
+
+
+def ask_time(update: Update, context: CallbackContext):
+    context.user_data["date"] = update.message.text
+    update.message.reply_text("Введите время доставки:")
+    return ORDER_FLOWER
+
+
+def get_order(update: Update, context: CallbackContext):
+    context.user_data["time"] = update.message.text
+    print(context.user_data)
+
+
+def get_number_for_consulting(update: Update, context: CallbackContext):
+    update.callback_query.message.reply_text("Пожалуйста, введите ваш номер телефона:")
+    return CONSULTING
