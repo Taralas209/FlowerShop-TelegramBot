@@ -8,7 +8,7 @@ from .models import Flower, Florist, Courier, Consultation, Order
 import os
 
 
-CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER, END = range(14)
+CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER, SHOW_COLLECTIONS, END = range(15)
 
 
 def start(update: Update, context: CallbackContext):
@@ -106,7 +106,7 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
     reply_markup2 = InlineKeyboardMarkup(keyboard2)
     update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
                                              reply_markup=reply_markup2)
-
+    return BUTTON_HANDLING
 
 def button_handling(update: Update, context:  CallbackContext):
     query = update.callback_query
@@ -116,14 +116,14 @@ def button_handling(update: Update, context:  CallbackContext):
         update.callback_query.message.reply_text("Начнем процесс заказа!")
         return ask_name(update, context)
     elif query.data == 'back':
-        print("Пользователь нажал кнопку 'Назад'")
+        return show_collections(update, context)
     elif query.data == 'forward':
-        print("Пользователь нажал кнопку 'Вперёд'")
+        return show_collections(update, context)
     elif query.data == 'consulting':
         update.callback_query.message.reply_text("Укажите номер телефона, и наш флорист перезвонит вам в течение 20 минут")
         return get_number_for_consulting(update, context)
     elif query.data == 'collection':
-        print("Пользователь нажал кнопку Коллекция")
+        return show_collections(update, context)
 
 
 def ask_name(update: Update, context: CallbackContext):
@@ -191,6 +191,34 @@ def create_order(update: Update, context: CallbackContext):
 
     send_order_to_courier(update, context, order)
 
+def show_collections(update: Update, context: CallbackContext):
+    flower = Flower.objects.order_by('?').first()
+    context.user_data['flower_id'] = flower.id
+
+    fs = FileSystemStorage()
+    image_path = fs.url(flower.image.name)
+    image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
+
+    if update.callback_query:
+        message = update.callback_query.message
+    else:
+        message = update.message
+
+    message.reply_photo(photo=open(image_path, 'rb'))
+    message.reply_text(
+        f"Название: {flower.name}\n"
+        f"Описание: {flower.description}\n"
+        f"Цена: {flower.price} руб."
+    )
+    keyboard = [
+        [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
+        [InlineKeyboardButton("Заказать", callback_data='order')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
+
+    return BUTTON_HANDLING
+
 
 def get_number_for_consulting(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Пожалуйста, введите ваш номер телефона:")
@@ -209,4 +237,5 @@ def get_number_to_florist(update: Update, context: CallbackContext):
     consultation.save()
 
     send_number_to_florist(update, context, consultation)
+    show_collections(update, context)
 
