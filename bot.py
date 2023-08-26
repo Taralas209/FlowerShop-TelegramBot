@@ -4,7 +4,7 @@ import django
 django.setup()
 
 from dotenv import load_dotenv
-from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order, get_number_to_florist, create_order, show_collections
+from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order, get_number_to_florist, create_order, show_collections, restart
 from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, BUTTON_HANDLING, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, ORDER_FLOWER, GETTING_NUMBER, CREATE_ORDER, SHOW_COLLECTIONS
 from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
 
@@ -32,10 +32,11 @@ def main():
             CREATE_ORDER: [CallbackQueryHandler(create_order, pattern='^confirm_order$')],
             SHOW_COLLECTIONS: [CallbackQueryHandler(show_collections)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler('restart', restart)],
     )
 
     dp.add_handler(conv_handler)
+    dp.add_handler(CommandHandler('restart', restart))
 
     updater.start_polling()
     updater.idle()

@@ -23,6 +23,12 @@ def start(update: Update, context: CallbackContext):
     return CHOOSE_OCCASION
 
 
+def restart(update, context):
+    user = update.message.from_user
+    update.message.reply_text("Бот перезапущен!")
+    return start(update, context)
+
+
 def choose_occasion(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
