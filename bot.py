@@ -4,8 +4,8 @@ import django
 django.setup()
 
 from dotenv import load_dotenv
-from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order
-from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, BUTTON_HANDLING, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, ORDER_FLOWER
+from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order, get_number_to_florist, create_order
+from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, BUTTON_HANDLING, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, ORDER_FLOWER, GETTING_NUMBER, CREATE_ORDER
 from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
 
 def main():
@@ -28,6 +28,8 @@ def main():
             CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
             CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
             ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, get_order)],
+            GETTING_NUMBER: [MessageHandler(Filters.text & ~Filters.command, get_number_to_florist)],
+            CREATE_ORDER: [CallbackQueryHandler(create_order, pattern='^confirm_order$')],
         },
         fallbacks=[],
     )

@@ -1,12 +1,14 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
+from .bot_actions import send_number_to_florist, send_order_to_courier
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from .models import Flower
+from datetime import datetime
+from .models import Flower, Florist, Courier, Consultation, Order
 import os
 
 
-CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, END = range(12)
+CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER, END = range(14)
 
 
 def start(update: Update, context: CallbackContext):
@@ -77,6 +79,7 @@ def choose_budget(update: Update, context: CallbackContext):
 
 def show_flower_and_buttons(update: Update, context: CallbackContext):
     flower = Flower.objects.order_by('?').first()
+    context.user_data['flower_id'] = flower.id
 
     fs = FileSystemStorage()
     image_path = fs.url(flower.image.name)
@@ -141,21 +144,69 @@ def ask_address(update: Update, context: CallbackContext):
 
 def ask_date(update: Update, context: CallbackContext):
     context.user_data["adress"] = update.message.text
-    update.message.reply_text("Введите дату доставки:")
+    update.message.reply_text("Введите дату доставки (дд.мм.гггг):")
     return CHOOSE_TIME
 
 
 def ask_time(update: Update, context: CallbackContext):
-    context.user_data["date"] = update.message.text
-    update.message.reply_text("Введите время доставки:")
+    date_str = update.message.text
+    date_obj = datetime.strptime(date_str, "%d.%m.%Y").date()
+    context.user_data["date"] = date_obj
+    update.message.reply_text("Введите время доставки (чч:мм):")
     return ORDER_FLOWER
 
 
 def get_order(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
-    print(context.user_data)
+
+    flower = Flower.objects.get(id=context.user_data["flower_id"])
+    order_info = f"""Вот ваш заказ:
+Название букета: {flower.name}
+Цена букета: {flower.price}
+Имя: {context.user_data["name"]}
+Фамилия: {context.user_data["surname"]}
+Адрес: {context.user_data["adress"]}
+Дата и время доставки: {context.user_data["date"]} {context.user_data["time"]}"""
+
+    keyboard = [[InlineKeyboardButton("Подтверждаю", callback_data='confirm_order')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text(order_info, reply_markup=reply_markup)
+
+    return CREATE_ORDER
+
+
+def create_order(update: Update, context: CallbackContext):
+    order = Order(
+        flower=Flower.objects.get(id=context.user_data["flower_id"]),
+        first_name=context.user_data["name"],
+        last_name=context.user_data["surname"],
+        address=context.user_data["adress"],
+        delivery_date=context.user_data["date"],
+        delivery_time=context.user_data["time"]
+    )
+    order.save()
+
+    update.callback_query.message.reply_text("Ваш заказ успешно принят, спасибо за доверие!")
+
+    send_order_to_courier(update, context, order)
 
 
 def get_number_for_consulting(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Пожалуйста, введите ваш номер телефона:")
-    return CONSULTING
+    return GETTING_NUMBER
+
+
+def get_number_to_florist(update: Update, context: CallbackContext):
+    context.user_data["number"] = update.message.text
+    update.message.reply_text("Флорист скоро свяжется с вами. А пока можете присмотреть что-нибудь из готовой коллекции")
+
+    consultation = Consultation(
+        reason=context.user_data.get("reason"),
+        budget=context.user_data.get("budget"),
+        number=context.user_data.get("number")
+    )
+    consultation.save()
+
+    send_number_to_florist(update, context, consultation)
+
