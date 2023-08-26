@@ -43,6 +43,7 @@ def choose_occasion(update: Update, context: CallbackContext):
 
     return CHOOSE_BUDGET
 
+
 def show_budget_buttons(update: Update, _: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("500", callback_data='500')],
@@ -65,7 +66,6 @@ def custom_occasion_text(update: Update, context: CallbackContext):
     return CHOOSE_BUDGET
 
 
-
 def choose_budget(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -84,9 +84,11 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
     image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
 
     update.callback_query.message.reply_photo(photo=open(image_path, 'rb'))
-    update.callback_query.message.reply_text(f"Название: {flower.name}\n"
-                              f"Описание: {flower.description}\n"
-                              f"Цена: {flower.price} руб.")
+    update.callback_query.message.reply_text(
+        f"Название: {flower.name}\n"
+        f"Описание: {flower.description}\n"
+        f"Цена: {flower.price} руб."
+    )
 
     keyboard = [
         [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
