@@ -4,8 +4,7 @@ import django
 django.setup()
 
 from dotenv import load_dotenv
-from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, show_flower_and_buttons
-from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, SHOW_FLOWER
+from telegram_bot import handlers
 from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
 
 
@@ -17,12 +16,15 @@ def main():
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[CommandHandler('start', handlers.start)],
         states={
-            CHOOSE_OCCASION: [CallbackQueryHandler(choose_occasion)],
-            CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, custom_occasion_text)],
-            CHOOSE_BUDGET: [CallbackQueryHandler(choose_budget)],
-            # SHOW_FLOWER: [CallbackQueryHandler(show_flower)],
+            handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
+            handlers.CUSTOM_OCCASION_TEXT: [
+                MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
+            ],
+            handlers.CHOOSE_BUDGET: [CallbackQueryHandler(handlers.choose_budget)],
+            handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
+            handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)]
         },
         fallbacks=[],
     )
