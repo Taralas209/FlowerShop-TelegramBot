@@ -92,7 +92,7 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
 
     flowers = get_filtered_flowers(occasion, approx_price)
     if not flowers:
-        update.message.reply_text("Нет подходящих букетов")
+        update.callback_query.message.reply_text("Нет подходящих букетов")
         return ConversationHandler.END
 
     context.user_data["flowers"] = flowers
