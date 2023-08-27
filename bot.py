@@ -4,42 +4,43 @@ import django
 django.setup()
 
 from dotenv import load_dotenv
-from telegram_bot.handlers import start, choose_occasion, choose_budget, custom_occasion_text, button_handling, ask_name, ask_surname, ask_address, ask_date, ask_time, get_order, get_number_to_florist, create_order, show_collections, restart
-from telegram_bot.handlers import CHOOSE_OCCASION, CHOOSE_BUDGET, CUSTOM_OCCASION_TEXT, BUTTON_HANDLING, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, ORDER_FLOWER, GETTING_NUMBER, CREATE_ORDER, SHOW_COLLECTIONS
+from telegram_bot import handlers
 from telegram.ext import CommandHandler, CallbackContext, Updater, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
+
 
 def main():
     load_dotenv()
-    TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-    updater = Updater(TELEGRAM_TOKEN)
+    telegram_token = os.getenv('TELEGRAM_TOKEN')
+    updater = Updater(telegram_token)
 
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[CommandHandler('start', handlers.start)],
         states={
-            CHOOSE_OCCASION: [CallbackQueryHandler(choose_occasion)],
-            CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, custom_occasion_text)],
-            CHOOSE_BUDGET: [CallbackQueryHandler(choose_budget)],
-            BUTTON_HANDLING: [CallbackQueryHandler(button_handling)],
-            CHOOSE_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
-            CHOOSE_SURNAME: [MessageHandler(Filters.text & ~Filters.command, ask_surname)],
-            CHOOSE_ADDRESS: [MessageHandler(Filters.text & ~Filters.command, ask_address)],
-            CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
-            CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
-            ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, get_order)],
-            GETTING_NUMBER: [MessageHandler(Filters.text & ~Filters.command, get_number_to_florist)],
-            CREATE_ORDER: [CallbackQueryHandler(create_order, pattern='^confirm_order$')],
-            SHOW_COLLECTIONS: [CallbackQueryHandler(show_collections)],
+            handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
+            handlers.CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)],
+            handlers.CHOOSE_BUDGET: [CallbackQueryHandler(handlers.choose_budget)],
+            handlers.BUTTON_HANDLING: [CallbackQueryHandler(handlers.button_handling)],
+            handlers.CHOOSE_NAME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_name)],
+            handlers.CHOOSE_SURNAME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_surname)],
+            handlers.CHOOSE_ADDRESS: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_address)],
+            handlers.CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_date)],
+            handlers.CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_time)],
+            handlers.ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_order)],
+            handlers.GETTING_NUMBER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_number_to_florist)],
+            handlers.CREATE_ORDER: [CallbackQueryHandler(handlers.create_order, pattern='^confirm_order$')],
+            handlers.SHOW_COLLECTIONS: [CallbackQueryHandler(handlers.show_collections)],
         },
-        fallbacks=[CommandHandler('restart', restart)],
+        fallbacks=[CommandHandler('restart', handlers.restart)],
     )
 
     dp.add_handler(conv_handler)
-    dp.add_handler(CommandHandler('restart', restart))
+    dp.add_handler(CommandHandler('restart', handlers.restart))
 
     updater.start_polling()
     updater.idle()
+
 
 if __name__ == '__main__':
     main()

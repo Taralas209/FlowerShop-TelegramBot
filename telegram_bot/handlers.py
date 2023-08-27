@@ -73,7 +73,6 @@ def custom_occasion_text(update: Update, context: CallbackContext):
     return CHOOSE_BUDGET
 
 
-
 def choose_budget(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -114,6 +113,7 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
                                              reply_markup=reply_markup2)
     return BUTTON_HANDLING
 
+
 def button_handling(update: Update, context:  CallbackContext):
     query = update.callback_query
     query.answer()
@@ -136,6 +136,7 @@ def ask_name(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Пожалуйста, введите ваше имя:")
     return CHOOSE_SURNAME
 
+
 def ask_surname(update: Update, context: CallbackContext):
     context.user_data["name"] = update.message.text
     update.message.reply_text("Теперь введите вашу фамилию:")
@@ -149,7 +150,7 @@ def ask_address(update: Update, context: CallbackContext):
 
 
 def ask_date(update: Update, context: CallbackContext):
-    context.user_data["adress"] = update.message.text
+    context.user_data["address"] = update.message.text
     update.message.reply_text("Введите дату доставки (дд.мм.гггг):")
     return CHOOSE_TIME
 
@@ -171,7 +172,7 @@ def get_order(update: Update, context: CallbackContext):
 Цена букета: {flower.price}
 Имя: {context.user_data["name"]}
 Фамилия: {context.user_data["surname"]}
-Адрес: {context.user_data["adress"]}
+Адрес: {context.user_data["address"]}
 Дата и время доставки: {context.user_data["date"]} {context.user_data["time"]}"""
 
     keyboard = [[InlineKeyboardButton("Подтверждаю", callback_data='confirm_order')]]
@@ -187,7 +188,7 @@ def create_order(update: Update, context: CallbackContext):
         flower=Flower.objects.get(id=context.user_data["flower_id"]),
         first_name=context.user_data["name"],
         last_name=context.user_data["surname"],
-        address=context.user_data["adress"],
+        address=context.user_data["address"],
         delivery_date=context.user_data["date"],
         delivery_time=context.user_data["time"]
     )
@@ -196,6 +197,7 @@ def create_order(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Ваш заказ успешно принят, спасибо за доверие!")
 
     send_order_to_courier(update, context, order)
+
 
 def show_collections(update: Update, context: CallbackContext):
     flower = Flower.objects.order_by('?').first()
@@ -244,4 +246,3 @@ def get_number_to_florist(update: Update, context: CallbackContext):
 
     send_number_to_florist(update, context, consultation)
     show_collections(update, context)
-
