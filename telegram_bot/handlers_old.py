@@ -1,5 +1,5 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext
 from .bot_actions import send_number_to_florist, send_order_to_courier
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
@@ -83,46 +83,18 @@ def choose_budget(update: Update, context: CallbackContext):
 
 
 def show_flower_and_buttons(update: Update, context: CallbackContext):
-    if context.user_data.get("custom_occasion"):
-        occasion = None
-    else:
-        occasion = context.user_data["reason"]
-    approx_price = context.user_data["budget"]
-
-    flowers = get_filtered_flowers(occasion, approx_price)
-    if not flowers:
-        keyboard = [
-            [InlineKeyboardButton("Показать всю коллекцию", callback_data='collection')],
-            [InlineKeyboardButton("Начать сначала", callback_data='restart')]
-        ]
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        update.callback_query.message.reply_text("Нет подходящих букетов", reply_markup=reply_markup)
-        return BUTTON_HANDLING
-
-    context.user_data["flowers"] = flowers
-    context.user_data["current_flower_index"] = 0
-
-    send_flower_info(update, context)
-
-
-def send_flower_info(update, context):
-    flowers = context.user_data["flowers"]
-    index = context.user_data["current_flower_index"]
-
-    flower = flowers[index]
-    print(f"flower = {flower}")
+    flower = Flower.objects.order_by('?').first()
+    context.user_data['flower_id'] = flower.id
 
     fs = FileSystemStorage()
     image_path = fs.url(flower.image.name)
     image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
 
-    flower_description = (
-        f"Название: {flower.name}\n"
-        f"Описание: {flower.description}\n"
-        f"Цена: {flower.price} руб."
-    )
-    catalogue_message = update.callback_query.message.reply_photo(photo=open(image_path, 'rb'), caption=flower_description)
+    update.callback_query.message.reply_photo(photo=open(image_path, 'rb'))
+    update.callback_query.message.reply_text(f"Название: {flower.name}\n"
+                              f"Описание: {flower.description}\n"
+                              f"Цена: {flower.price} руб.")
+
     keyboard = [
         [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
         [InlineKeyboardButton("Заказать", callback_data='order')],
@@ -139,97 +111,7 @@ def send_flower_info(update, context):
     reply_markup2 = InlineKeyboardMarkup(keyboard2)
     update.callback_query.message.reply_text(text="Хотите что-то еще более уникальное? Подберите другой букет из нашей коллекции или закажите консультацию флориста",
                                              reply_markup=reply_markup2)
-
-    context.user_data["catalogue_message_id"] = catalogue_message.message_id
-
-
-def get_filtered_flowers(occasion, approx_price):
-    price_range = {
-        "500": (500, 600),
-        "1000": (1000, 1500),
-        "2000": (2000, 3000),
-        "more": 3000,
-    }
-    print(f"occasion, approx_price = {occasion} {approx_price}")
-    if approx_price == "price_more":
-        flowers_list = Flower.objects.filter(occasion=occasion, price__gte=price_range[approx_price])
-    elif not occasion:
-        flowers_list = Flower.objects.filter(price__range=price_range[approx_price])
-    elif approx_price == "no_matter":
-        flowers_list = Flower.objects.filter(occasion=occasion)
-    else:
-        flowers_list = Flower.objects.filter(occasion=occasion, price__range=price_range[approx_price])
-    return flowers_list
-
-
-def get_all_flowers():
-    return Flower.objects.all()
-
-
-def button_handling(update: Update, context:  CallbackContext):
-    query = update.callback_query
-    query.answer()
-
-    index = context.user_data["current_flower_index"]
-
-    if query.data == "order":
-        # There's a bouquet saved in user_data by now
-        update.callback_query.message.reply_text("Начнем процесс заказа!")
-        return ask_name(update, context)
-    elif query.data == 'back':
-        index = index - 1
-        if index < 0:
-            index = len(context.user_data["flowers"]) - 1
-        context.user_data["current_flower_index"] = index
-        return update_catalogue(update, context)
-    elif query.data == 'forward':
-        index = index + 1
-        if index >= len(context.user_data["flowers"]):
-            index = 0
-        context.user_data["current_flower_index"] = index
-        return update_catalogue(update, context)
-    elif query.data == 'consulting':
-        update.callback_query.message.reply_text("Укажите номер телефона, и наш флорист перезвонит вам в течение 20 минут")
-        return get_number_for_consulting(update, context)
-    elif query.data == 'collection':
-        print("Пользователь нажал кнопку Коллекция")
-        update.callback_query.message.reply_text("Вот вся наша коллеция:")
-        context.user_data["flowers"] = get_all_flowers()
-        send_flower_info(update, context)
-    elif query.data == 'restart':
-        restart(update, context)
-
-
-def update_catalogue(update, context):
-    query = update.callback_query
-    query.answer()
-    catalogue_message_id = context.user_data["catalogue_message_id"]
-
-    flowers = context.user_data["flowers"]
-    index = context.user_data["current_flower_index"]
-
-    flower = flowers[index]
-    fs = FileSystemStorage()
-    image_path = fs.url(flower.image.name)
-    image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
-
-    flower_description = (
-        f"Название: {flower.name}\n"
-        f"Описание: {flower.description}\n"
-        f"Цена: {flower.price} руб."
-    )
-
-    with open(image_path, "rb") as new_image:
-        new_photo = InputMediaPhoto(
-            media=new_image,
-            caption=flower_description
-        )
-
-        context.bot.edit_message_media(
-            message_id=catalogue_message_id,
-            chat_id=query.message.chat_id,
-            media=new_photo,
-        )
+    return BUTTON_HANDLING
 
 
 def button_handling(update: Update, context:  CallbackContext):
@@ -263,7 +145,7 @@ def ask_surname(update: Update, context: CallbackContext):
 
 def ask_address(update: Update, context: CallbackContext):
     context.user_data["surname"] = update.message.text
-    update.message.reply_text("Введите ваш адрес (город, улица и номер дома):")
+    update.message.reply_text("Введите ваш адрес:")
     return CHOOSE_DATE
 
 
