@@ -24,7 +24,6 @@ def start(update: Update, context: CallbackContext):
 
 
 def restart(update, context):
-    user = update.message.from_user
     update.message.reply_text("Бот перезапущен!")
     return start(update, context)
 
