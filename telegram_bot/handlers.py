@@ -13,12 +13,19 @@ def start(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("День рождения", callback_data='birthday')],
         [InlineKeyboardButton("Свадьба", callback_data='wedding')],
+        [InlineKeyboardButton("В школу", callback_data='school')],
         [InlineKeyboardButton("Без повода", callback_data='no_reason')],
         [InlineKeyboardButton("Другой", callback_data='other')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text("Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:", reply_markup=reply_markup)
     return CHOOSE_OCCASION
+
+
+def restart(update, context):
+    user = update.message.from_user
+    update.message.reply_text("Бот перезапущен!")
+    return start(update, context)
 
 
 def choose_occasion(update: Update, context: CallbackContext):

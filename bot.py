@@ -19,7 +19,6 @@ def main():
         entry_points=[CommandHandler('start', handlers.start)],
         states={
             handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
-            # handlers.SEND_FLOWER: [CallbackQueryHandler(handlers.button_click)],
             handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
             handlers.CUSTOM_OCCASION_TEXT: [
                 MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
@@ -33,10 +32,11 @@ def main():
             handlers.CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_time)],
             handlers.ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_order)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler('restart', handlers.restart)],
     )
 
     dp.add_handler(conv_handler)
+    dp.add_handler(CommandHandler('restart', handlers.restart))
 
     updater.start_polling()
     updater.idle()
