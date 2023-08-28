@@ -48,13 +48,13 @@ class Courier(models.Model):
 
 
 class Consultation(models.Model):
-    reason = models.CharField(max_length=200)
+    occasion = models.CharField(max_length=200)
     budget = models.PositiveIntegerField()
     number = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.reason} - {self.budget} - {self.number}"
+        return f"{self.occasion} - {self.budget} - {self.number}"
 
     class Meta:
         verbose_name = "Консультация"

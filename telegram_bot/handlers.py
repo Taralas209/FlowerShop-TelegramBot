@@ -20,18 +20,26 @@ def start(update: Update, context: CallbackContext):
         [InlineKeyboardButton("Другой", callback_data='other')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:", reply_markup=reply_markup)
+    text = "Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:"
+    if update.message:
+        update.message.reply_text(text, reply_markup=reply_markup)
+    else:
+        update.callback_query.message.reply_text(text, reply_markup=reply_markup)
     return CHOOSE_OCCASION
 
 
 def restart(update, context):
-    update.message.reply_text("Бот перезапущен!")
+    if update.message:
+        update.message.reply_text("Бот перезапущен!")
+    else:
+        update.callback_query.message.reply_text("Бот перезапущен!")
     context.user_data.clear()
     return start(update, context)
 
 
 def choose_occasion(update: Update, context: CallbackContext):
     query = update.callback_query
+    print(query.data)
     query.answer()
     occasion = query.data
 
@@ -92,6 +100,7 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
 
     flowers = get_filtered_flowers(occasion, approx_price)
     if not flowers:
+        print("\nNo flowers found!\n")
         keyboard = [
             [InlineKeyboardButton("Показать всю коллекцию", callback_data='collection')],
             [InlineKeyboardButton("Начать сначала", callback_data='restart')]
@@ -101,6 +110,8 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
         update.callback_query.message.reply_text("Нет подходящих букетов", reply_markup=reply_markup)
         return BUTTON_HANDLING
 
+    if len(flowers) == 1:
+        update.callback_query.message.reply_text(f"Нашёлся {len(flowers)} букет")
     context.user_data["flowers"] = flowers
     context.user_data["current_flower_index"] = 0
 
@@ -151,7 +162,7 @@ def get_filtered_flowers(occasion, approx_price):
         "2000": (2000, 3000),
         "more": 3000,
     }
-
+    print(f"\n{occasion} - {approx_price}")
     if occasion:
         flowers_list = Flower.objects.filter(occasion=occasion)
     else:
@@ -173,7 +184,7 @@ def button_handling(update: Update, context:  CallbackContext):
     query = update.callback_query
     query.answer()
 
-    index = context.user_data["current_flower_index"]
+    index = context.user_data.get("current_flower_index")
 
     if query.data == "order":
         update.callback_query.message.reply_text("Начнем процесс заказа!")
@@ -194,11 +205,13 @@ def button_handling(update: Update, context:  CallbackContext):
         update.callback_query.message.reply_text("Укажите номер телефона, и наш флорист перезвонит вам в течение 20 минут")
         return get_number_for_consulting(update, context)
     elif query.data == 'collection':
-        print("Пользователь нажал кнопку Коллекция")
+        print("\nПользователь нажал кнопку Коллекция\n")
         update.callback_query.message.reply_text("Вот вся наша коллеция:")
         context.user_data["flowers"] = get_all_flowers()
+        context.user_data["current_flower_index"] = 0
         send_flower_info(update, context)
     elif query.data == 'restart':
+        print("\nRestart button was pressed\n")
         restart(update, context)
 
 
@@ -344,9 +357,10 @@ def get_number_to_florist(update: Update, context: CallbackContext):
     update.message.reply_text("Флорист скоро свяжется с вами. А пока можете присмотреть что-нибудь из готовой коллекции")
 
     consultation = Consultation(
-        reason=context.user_data.get("reason"),
+        occasion=context.user_data.get("occasion"),
         budget=context.user_data.get("budget"),
-        number=context.user_data.get("number")
+        number=context.user_data.get("number"),
+        # created_at=datetime.now()
     )
     consultation.save()
 
