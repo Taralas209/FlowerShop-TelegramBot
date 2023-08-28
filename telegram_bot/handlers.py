@@ -1,12 +1,14 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMedia
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import CallbackContext, ConversationHandler
+from .bot_actions import send_number_to_florist, send_order_to_courier
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from .models import Flower
+from datetime import datetime
+from .models import Flower, Florist, Courier, Consultation, Order
 import os
 
 
-CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, SHOW_FLOWER, BUTTON_HANDLING, SEND_FLOWER, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING = range(13)
+CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER, SHOW_COLLECTIONS = range(14)
 
 
 def start(update: Update, context: CallbackContext):
@@ -23,7 +25,6 @@ def start(update: Update, context: CallbackContext):
 
 
 def restart(update, context):
-    user = update.message.from_user
     update.message.reply_text("Бот перезапущен!")
     context.user_data.clear()
     return start(update, context)
@@ -79,12 +80,10 @@ def choose_budget(update: Update, context: CallbackContext):
     context.user_data["budget"] = query.data
 
     show_flower_and_buttons(update, context)
-
     return BUTTON_HANDLING
 
 
 def show_flower_and_buttons(update: Update, context: CallbackContext):
-    print(f"\ncontext.user_data = {context.user_data}\n")
     if context.user_data.get("custom_occasion"):
         occasion = None
     else:
@@ -93,8 +92,14 @@ def show_flower_and_buttons(update: Update, context: CallbackContext):
 
     flowers = get_filtered_flowers(occasion, approx_price)
     if not flowers:
-        update.callback_query.message.reply_text("Нет подходящих букетов")
-        return ConversationHandler.END
+        keyboard = [
+            [InlineKeyboardButton("Показать всю коллекцию", callback_data='collection')],
+            [InlineKeyboardButton("Начать сначала", callback_data='restart')]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.callback_query.message.reply_text("Нет подходящих букетов", reply_markup=reply_markup)
+        return BUTTON_HANDLING
 
     context.user_data["flowers"] = flowers
     context.user_data["current_flower_index"] = 0
@@ -195,6 +200,8 @@ def button_handling(update: Update, context:  CallbackContext):
         update.callback_query.message.reply_text("Вот вся наша коллеция:")
         context.user_data["flowers"] = get_all_flowers()
         send_flower_info(update, context)
+    elif query.data == 'restart':
+        restart(update, context)
 
 
 def update_catalogue(update, context):
@@ -242,27 +249,104 @@ def ask_surname(update: Update, context: CallbackContext):
 
 def ask_address(update: Update, context: CallbackContext):
     context.user_data["surname"] = update.message.text
-    update.message.reply_text("Введите ваш адрес:")
+    update.message.reply_text("Введите ваш адрес (город, улица и номер дома):")
     return CHOOSE_DATE
 
 
 def ask_date(update: Update, context: CallbackContext):
-    context.user_data["adress"] = update.message.text
-    update.message.reply_text("Введите дату доставки:")
+    context.user_data["address"] = update.message.text
+    update.message.reply_text("Введите дату доставки (дд.мм.гггг):")
     return CHOOSE_TIME
 
 
 def ask_time(update: Update, context: CallbackContext):
-    context.user_data["date"] = update.message.text
-    update.message.reply_text("Введите время доставки:")
+    date_str = update.message.text
+    date_obj = datetime.strptime(date_str, "%d.%m.%Y").date()
+    context.user_data["date"] = date_obj
+    update.message.reply_text("Введите время доставки (чч:мм):")
     return ORDER_FLOWER
 
 
 def get_order(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
-    print(context.user_data)
+
+    flower = Flower.objects.get(id=context.user_data["flower_id"])
+    order_info = f"""Вот ваш заказ:
+Название букета: {flower.name}
+Цена букета: {flower.price}
+Имя: {context.user_data["name"]}
+Фамилия: {context.user_data["surname"]}
+Адрес: {context.user_data["address"]}
+Дата и время доставки: {context.user_data["date"]} {context.user_data["time"]}"""
+
+    keyboard = [[InlineKeyboardButton("Подтверждаю", callback_data='confirm_order')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text(order_info, reply_markup=reply_markup)
+
+    return CREATE_ORDER
+
+
+def create_order(update: Update, context: CallbackContext):
+    order = Order(
+        flower=Flower.objects.get(id=context.user_data["flower_id"]),
+        first_name=context.user_data["name"],
+        last_name=context.user_data["surname"],
+        address=context.user_data["address"],
+        delivery_date=context.user_data["date"],
+        delivery_time=context.user_data["time"]
+    )
+    order.save()
+
+    update.callback_query.message.reply_text("Ваш заказ успешно принят, спасибо за доверие!")
+
+    send_order_to_courier(update, context, order)
+
+
+def show_collections(update: Update, context: CallbackContext):
+    flower = Flower.objects.order_by('?').first()
+    context.user_data['flower_id'] = flower.id
+
+    fs = FileSystemStorage()
+    image_path = fs.url(flower.image.name)
+    image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
+
+    if update.callback_query:
+        message = update.callback_query.message
+    else:
+        message = update.message
+
+    message.reply_photo(photo=open(image_path, 'rb'))
+    message.reply_text(
+        f"Название: {flower.name}\n"
+        f"Описание: {flower.description}\n"
+        f"Цена: {flower.price} руб."
+    )
+    keyboard = [
+        [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
+        [InlineKeyboardButton("Заказать", callback_data='order')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
+
+    return BUTTON_HANDLING
 
 
 def get_number_for_consulting(update: Update, context: CallbackContext):
     update.callback_query.message.reply_text("Пожалуйста, введите ваш номер телефона:")
-    return CONSULTING
+    return GETTING_NUMBER
+
+
+def get_number_to_florist(update: Update, context: CallbackContext):
+    context.user_data["number"] = update.message.text
+    update.message.reply_text("Флорист скоро свяжется с вами. А пока можете присмотреть что-нибудь из готовой коллекции")
+
+    consultation = Consultation(
+        reason=context.user_data.get("reason"),
+        budget=context.user_data.get("budget"),
+        number=context.user_data.get("number")
+    )
+    consultation.save()
+
+    send_number_to_florist(update, context, consultation)
+    show_collections(update, context)

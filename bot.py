@@ -18,7 +18,6 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', handlers.start)],
         states={
-            handlers.SHOW_FLOWER: [CallbackQueryHandler(handlers.show_flower_and_buttons)],
             handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
             handlers.CUSTOM_OCCASION_TEXT: [
                 MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
@@ -31,6 +30,9 @@ def main():
             handlers.CHOOSE_DATE: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_date)],
             handlers.CHOOSE_TIME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_time)],
             handlers.ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_order)],
+            handlers.GETTING_NUMBER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_number_to_florist)],
+            handlers.CREATE_ORDER: [CallbackQueryHandler(handlers.create_order, pattern='^confirm_order$')],
+            handlers.SHOW_COLLECTIONS: [CallbackQueryHandler(handlers.show_collections)],
         },
         fallbacks=[CommandHandler('restart', handlers.restart)],
     )
