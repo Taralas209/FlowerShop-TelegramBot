@@ -20,11 +20,13 @@ def start(update: Update, context: CallbackContext):
         [InlineKeyboardButton("Другой", callback_data='other')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    text = "Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:"
+
     if update.message:
-        update.message.reply_text(text, reply_markup=reply_markup)
+        update.message.reply_text("Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:",
+                              reply_markup=reply_markup)
     else:
-        update.callback_query.message.reply_text(text, reply_markup=reply_markup)
+        update.callback_query.message.reply_text("Привет! К какому событию готовимся? Выберите один из вариантов, либо укажите свой:",
+                              reply_markup=reply_markup)
     return CHOOSE_OCCASION
 
 
@@ -39,7 +41,6 @@ def restart(update, context):
 
 def choose_occasion(update: Update, context: CallbackContext):
     query = update.callback_query
-    print(query.data)
     query.answer()
     occasion = query.data
 

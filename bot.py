@@ -37,7 +37,6 @@ def main():
     )
 
     dp.add_handler(conv_handler)
-    dp.add_handler(CommandHandler('restart', handlers.restart))
 
     updater.start_polling()
     updater.idle()
