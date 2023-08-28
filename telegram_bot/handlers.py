@@ -151,7 +151,6 @@ def get_filtered_flowers(occasion, approx_price):
         "2000": (2000, 3000),
         "more": 3000,
     }
-    print(f"\noccasion, approx_price = {occasion} {approx_price}\n")
 
     if occasion:
         flowers_list = Flower.objects.filter(occasion=occasion)
@@ -177,7 +176,6 @@ def button_handling(update: Update, context:  CallbackContext):
     index = context.user_data["current_flower_index"]
 
     if query.data == "order":
-        # There's a bouquet saved in user_data by now
         update.callback_query.message.reply_text("Начнем процесс заказа!")
         return ask_name(update, context)
     elif query.data == 'back':
@@ -294,7 +292,8 @@ def create_order(update: Update, context: CallbackContext):
         last_name=context.user_data["surname"],
         address=context.user_data["address"],
         delivery_date=context.user_data["date"],
-        delivery_time=context.user_data["time"]
+        delivery_time=context.user_data["time"],
+        order_datetime=datetime.now()
     )
     order.save()
 
