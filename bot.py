@@ -19,7 +19,9 @@ def main():
         entry_points=[CommandHandler('start', handlers.start)],
         states={
             handlers.CHOOSE_OCCASION: [CallbackQueryHandler(handlers.choose_occasion)],
-            handlers.CUSTOM_OCCASION_TEXT: [MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)],
+            handlers.CUSTOM_OCCASION_TEXT: [
+                MessageHandler(Filters.text & ~Filters.command, handlers.custom_occasion_text)
+            ],
             handlers.CHOOSE_BUDGET: [CallbackQueryHandler(handlers.choose_budget)],
             handlers.BUTTON_HANDLING: [CallbackQueryHandler(handlers.button_handling)],
             handlers.CHOOSE_NAME: [MessageHandler(Filters.text & ~Filters.command, handlers.ask_name)],
@@ -30,7 +32,6 @@ def main():
             handlers.ORDER_FLOWER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_order)],
             handlers.GETTING_NUMBER: [MessageHandler(Filters.text & ~Filters.command, handlers.get_number_to_florist)],
             handlers.CREATE_ORDER: [CallbackQueryHandler(handlers.create_order, pattern='^confirm_order$')],
-            handlers.SHOW_COLLECTIONS: [CallbackQueryHandler(handlers.show_collections)],
         },
         fallbacks=[CommandHandler('restart', handlers.restart)],
     )

@@ -245,4 +245,11 @@ def get_number_to_florist(update: Update, context: CallbackContext):
     consultation.save()
 
     send_number_to_florist(update, context, consultation)
+    
+    if update.callback_query:
+        message = update.callback_query.message
+    else:
+        message = update.message
+    message.reply_text("Вот вся наша коллекция:")
+    
     show_collections(update, context)
