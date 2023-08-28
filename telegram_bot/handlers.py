@@ -8,7 +8,7 @@ from .models import Flower, Florist, Courier, Consultation, Order
 import os
 
 
-CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER, SHOW_COLLECTIONS = range(14)
+CHOOSE_OCCASION, CUSTOM_OCCASION_TEXT, CHOOSE_BUDGET, BUTTON_HANDLING, ORDER_FLOWER, CHOOSE_NAME, CHOOSE_SURNAME, CHOOSE_ADDRESS, CHOOSE_DATE, CHOOSE_TIME, CONSULTING, GETTING_NUMBER, CREATE_ORDER = range(13)
 
 
 def start(update: Update, context: CallbackContext):
@@ -267,8 +267,10 @@ def ask_time(update: Update, context: CallbackContext):
 
 def get_order(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
+    flowers = context.user_data["flowers"]
+    index = context.user_data["current_flower_index"]
 
-    flower = Flower.objects.get(id=context.user_data["flower_id"])
+    flower = flowers[index]
     order_info = f"""Вот ваш заказ:
 Название букета: {flower.name}
 Цена букета: {flower.price}
@@ -281,13 +283,14 @@ def get_order(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     update.message.reply_text(order_info, reply_markup=reply_markup)
+    context.user_data["selected_flower"] = flower
 
     return CREATE_ORDER
 
 
 def create_order(update: Update, context: CallbackContext):
     order = Order(
-        flower=Flower.objects.get(id=context.user_data["flower_id"]),
+        flower=context.user_data["selected_flower"],
         first_name=context.user_data["name"],
         last_name=context.user_data["surname"],
         address=context.user_data["address"],
@@ -302,33 +305,33 @@ def create_order(update: Update, context: CallbackContext):
     send_order_to_courier(update, context, order)
 
 
-def show_collections(update: Update, context: CallbackContext):
-    flower = Flower.objects.order_by('?').first()
-    context.user_data['flower_id'] = flower.id
-
-    fs = FileSystemStorage()
-    image_path = fs.url(flower.image.name)
-    image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
-
-    if update.callback_query:
-        message = update.callback_query.message
-    else:
-        message = update.message
-
-    message.reply_photo(photo=open(image_path, 'rb'))
-    message.reply_text(
-        f"Название: {flower.name}\n"
-        f"Описание: {flower.description}\n"
-        f"Цена: {flower.price} руб."
-    )
-    keyboard = [
-        [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
-        [InlineKeyboardButton("Заказать", callback_data='order')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
-
-    return BUTTON_HANDLING
+# def show_collections(update: Update, context: CallbackContext):
+#     flower = Flower.objects.order_by('?').first()
+#     context.user_data['flower_id'] = flower.id
+#
+#     fs = FileSystemStorage()
+#     image_path = fs.url(flower.image.name)
+#     image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path.lstrip('/'))
+#
+#     if update.callback_query:
+#         message = update.callback_query.message
+#     else:
+#         message = update.message
+#
+#     message.reply_photo(photo=open(image_path, 'rb'))
+#     message.reply_text(
+#         f"Название: {flower.name}\n"
+#         f"Описание: {flower.description}\n"
+#         f"Цена: {flower.price} руб."
+#     )
+#     keyboard = [
+#         [InlineKeyboardButton("Назад", callback_data='back'), InlineKeyboardButton("Вперёд", callback_data='forward')],
+#         [InlineKeyboardButton("Заказать", callback_data='order')],
+#     ]
+#     reply_markup = InlineKeyboardMarkup(keyboard)
+#     message.reply_text(text="Посмотрите другие букеты или сделайте заказ", reply_markup=reply_markup)
+#
+#     return BUTTON_HANDLING
 
 
 def get_number_for_consulting(update: Update, context: CallbackContext):
@@ -348,4 +351,7 @@ def get_number_to_florist(update: Update, context: CallbackContext):
     consultation.save()
 
     send_number_to_florist(update, context, consultation)
-    show_collections(update, context)
+
+    update.callback_query.message.reply_text("Вот вся наша коллеция:")
+    context.user_data["flowers"] = get_all_flowers()
+    send_flower_info(update, context)

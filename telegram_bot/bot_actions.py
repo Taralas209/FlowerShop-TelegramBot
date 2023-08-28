@@ -32,7 +32,6 @@ def send_order_to_courier(update, context, order):
         print(f"Error sending order to courier: {e}")
 
 
-
 def send_number_to_florist(update, context, consultation):
     try:
         florist = Florist.objects.first()

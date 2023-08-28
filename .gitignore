@@ -4,3 +4,4 @@ __pycache__/
 .env
 Pipfile
 Pipfile.lock
+telegram_bot/migrations/0002_consultation_courier_florist_alter_flower_options_and_more.py
