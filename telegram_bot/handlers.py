@@ -25,6 +25,7 @@ def start(update: Update, context: CallbackContext):
 def restart(update, context):
     user = update.message.from_user
     update.message.reply_text("Бот перезапущен!")
+    context.user_data.clear()
     return start(update, context)
 
 
@@ -83,9 +84,9 @@ def choose_budget(update: Update, context: CallbackContext):
 
 
 def show_flower_and_buttons(update: Update, context: CallbackContext):
-    print(f"context.user_data = {context.user_data}")
+    print(f"\ncontext.user_data = {context.user_data}\n")
     if context.user_data.get("custom_occasion"):
-        occasion = context.user_data["custom_occasion"]
+        occasion = None
     else:
         occasion = context.user_data["occasion"]
     approx_price = context.user_data["budget"]
@@ -145,13 +146,18 @@ def get_filtered_flowers(occasion, approx_price):
         "2000": (2000, 3000),
         "more": 3000,
     }
-    print(f"occasion, approx_price = {occasion} {approx_price}")
-    if approx_price == "price_more":
-        flowers_list = Flower.objects.filter(occasion=occasion, price__gte=price_range[approx_price])
-    elif approx_price == "no_matter":
+    print(f"\noccasion, approx_price = {occasion} {approx_price}\n")
+
+    if occasion:
         flowers_list = Flower.objects.filter(occasion=occasion)
     else:
-        flowers_list = Flower.objects.filter(occasion=occasion, price__range=price_range[approx_price])
+        flowers_list = Flower.objects.all()
+
+    if approx_price == "more":
+        flowers_list = flowers_list.filter(price__gte=price_range[approx_price])
+    elif approx_price != "no_matter":
+        flowers_list = flowers_list.filter(price__range=price_range[approx_price])
+
     return flowers_list
 
 
