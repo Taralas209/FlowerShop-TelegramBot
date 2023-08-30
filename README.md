@@ -15,8 +15,7 @@ python3 manage.py migrate
 
 ### 3. Load Flowers-Data into your database
 
-```bash
-python manage.py loaddata flowers.json```
+```python manage.py loaddata flowers.json```
 
 ### 4. Create a superuser to gain access to the admin panel:
 
